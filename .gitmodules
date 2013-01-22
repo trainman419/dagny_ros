@@ -1,0 +1,3 @@
+[submodule "dagny_protocol"]
+	path = dagny_protocol
+	url = git@github.com:trainman419/dagny_protocol.git
