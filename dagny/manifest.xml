@@ -9,9 +9,13 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/dagny</url>
 
+  <depend package="amcl"/>
   <depend package="hokuyo_node"/>
   <depend package="gmapping"/>
   <depend package="move_base"/>
+  <depend package="hardware_interface"/>
+  <depend package="diagnostic_aggregator"/>
+  <depend package="robot_state_publisher"/>
 
 </package>
 
