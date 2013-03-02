@@ -20,6 +20,8 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Twist.h>
+#include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/Vector3Stamped.h>
 #include <tf/transform_broadcaster.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Bool.h>
@@ -43,6 +45,10 @@ ros::Publisher sonar_pub;
 ros::Publisher gps_pub;
 ros::Publisher heading_pub;
 ros::Publisher bump_pub;
+
+// for publishing raw compass and IMU data
+ros::Publisher compass_pub;
+ros::Publisher imu_pub;
 
 ros::Publisher diagnostics_pub;
 
@@ -266,6 +272,40 @@ handler(imu_h) {
 
 }
 
+handler(raw_imu_h) {
+   // gyro: xyz, accel: xyz
+   float gx, gy, gz, ax, ay, az;
+   gx = p.readfloat();
+   gy = p.readfloat();
+   gz = p.readfloat();
+   ax = p.readfloat();
+   ay = p.readfloat();
+   az = p.readfloat();
+   geometry_msgs::TwistStamped imu;
+   imu.header.stamp = ros::Time::now();
+   imu.twist.angular.x = gx;
+   imu.twist.angular.y = gy;
+   imu.twist.angular.z = gz;
+   imu.twist.linear.x = ax;
+   imu.twist.linear.y = ay;
+   imu.twist.linear.z = az;
+
+   imu_pub.publish(imu);
+}
+
+handler(compass_h) {
+   float mx, my, mz;
+   mx = p.readfloat();
+   my = p.readfloat();
+   mz = p.readfloat();
+   geometry_msgs::Vector3Stamped compass;
+   compass.header.stamp = ros::Time::now();
+   compass.vector.x = mx;
+   compass.vector.y = my;
+   compass.vector.z = mz;
+   compass_pub.publish(compass);
+}
+
 int bandwidth = 0;
 
 void idle_diagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) {
@@ -290,10 +330,10 @@ void bandwidth_diagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) {
    if( bandwidth == 0 ) {
       stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR,
             "ERROR: No AVR data");
-   } else if( bandwidth < 400 ) {
+   } else if( bandwidth < 1000 ) {
       stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
             "Warning: Low AVR bandwidth");
-   } else if( bandwidth > 1000 ) {
+   } else if( bandwidth > 1400 ) {
       stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
             "Warning: High AVR bandwidth");
    } else {
@@ -357,6 +397,10 @@ int main(int argc, char ** argv) {
    handlers['G'] = gps_h;
    handlers['S'] = sonar_h;
    handlers['U'] = imu_h;
+   
+   // raw IMU handlers
+   handlers['M'] = compass_h;
+   handlers['V'] = raw_imu_h;
 
    ros::init(argc, argv, "hardware_interface");
 
@@ -399,6 +443,9 @@ int main(int argc, char ** argv) {
    gps_pub = n.advertise<sensor_msgs::NavSatFix>("gps", 10);
    heading_pub = n.advertise<std_msgs::Float32>("heading", 10);
    bump_pub = n.advertise<std_msgs::Bool>("bump", 10);
+
+   compass_pub = n.advertise<geometry_msgs::Vector3Stamped>("magnetic", 10);
+   imu_pub = n.advertise<geometry_msgs::TwistStamped>("velocity", 10);
 
    diagnostic_updater::Updater updater;
    updater.setHardwareID("Dagny");
