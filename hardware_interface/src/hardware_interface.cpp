@@ -26,6 +26,7 @@
 #include <std_msgs/Float32.h>
 #include <std_msgs/Bool.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
+#include <hardware_interface/Goal.h>
 
 #include <diagnostic_updater/diagnostic_updater.h>
 
@@ -49,6 +50,9 @@ ros::Publisher bump_pub;
 // for publishing raw compass and IMU data
 ros::Publisher compass_pub;
 ros::Publisher imu_pub;
+
+// for publishing user input about goals
+ros::Publisher goal_input_pub;
 
 ros::Publisher diagnostics_pub;
 
@@ -97,6 +101,26 @@ void cmdCallback( const geometry_msgs::Twist::ConstPtr & cmd_vel ) {
    cmd_ready = 1;
 }
 
+int goal_ready = 0;
+char goal_buf[32];
+Packet goal_packet('L', sizeof(goal_buf), goal_buf);
+
+void goalUpdateCallback( const hardware_interface::Goal::ConstPtr & goal) {
+   switch( goal->operation ) {
+      case hardware_interface::Goal::SET_CURRENT:
+         goal_packet.reset();
+         goal_packet.append(goal->operation);
+         goal_packet.append(goal->id);
+         goal_packet.finish();
+         goal_ready = 1;
+         break;
+      default:
+         ROS_ERROR("Unknown goal update: %d", goal->operation);
+         break;
+   }
+   return;
+}
+
 #define handler(foo) void foo(Packet & p)
 typedef void (*handler_ptr)(Packet & p);
 
@@ -125,8 +149,9 @@ handler(no_handler) {
 handler(shutdown_h) {
    int l = p.outsz();
    const char * in = p.outbuf();
-   int shutdown = 1;
+   int shutdown = 0;
    if( l == 9 ) {
+      shutdown = 1;
       for( int i=0; i<l; i++ ) {
          if( in[i] != 'Z' ) shutdown = 0;
       }
@@ -157,6 +182,13 @@ handler(gps_h) {
    sensor_msgs::NavSatFix gps;
    gps.latitude = lat / 1000000.0;
    gps.longitude = lon / 1000000.0;
+
+   // fill in static data
+   gps.status.service = sensor_msgs::NavSatStatus::SERVICE_GPS;
+   gps.position_covariance_type = 
+      sensor_msgs::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
+
+   // publish
    gps_pub.publish(gps);
    last_gps = ros::Time::now();
 }
@@ -230,7 +262,7 @@ handler(idle_h) {
    // uint8_t i2c_failures
    // uint8_t i2c_resets
    idle_cnt = p.readu16();
-   uint8_t i2c_fail = p.readu8();
+   /* uint8_t i2c_fail = */ p.readu8();
    i2c_resets = p.readu8();
 }
 
@@ -260,16 +292,16 @@ handler(sonar_h) {
 handler(imu_h) {
    // imu message format:
    // float[3]
-   float x, y, z;
-   x = p.readfloat();
-   y = p.readfloat();
+   //float x, y, z;
+   float z;
+   /* x = */ p.readfloat();
+   /* y = */ p.readfloat();
    z = p.readfloat();
    //ROS_INFO("IMU data: (% 03.7f, % 03.7f, % 03.7f)", x, y, z);
    heading = z;
    std_msgs::Float32 h;
    h.data = z;
    heading_pub.publish(h);
-
 }
 
 handler(raw_imu_h) {
@@ -304,6 +336,29 @@ handler(compass_h) {
    compass.vector.y = my;
    compass.vector.z = mz;
    compass_pub.publish(compass);
+}
+
+handler(goal_h) {
+   int8_t op;
+   op = p.reads8();
+   hardware_interface::Goal g;
+   g.operation = op;
+   switch(op) {
+      case hardware_interface::Goal::APPEND:
+         g.goal.latitude = p.reads32() / 1000000.0;
+         g.goal.longitude = p.reads32() / 1000000.0;
+         ROS_INFO("Add goal at lat %lf, lon %lf", g.goal.latitude, 
+               g.goal.longitude);
+         break;
+      case hardware_interface::Goal::DELETE:
+         g.id = p.reads32();
+         ROS_INFO("Remove goal at %d", g.id);
+         break;
+      default:
+         ROS_ERROR("Got unknown goal update %d", op);
+         return;
+   }
+   goal_input_pub.publish(g);
 }
 
 int bandwidth = 0;
@@ -402,6 +457,9 @@ int main(int argc, char ** argv) {
    handlers['M'] = compass_h;
    handlers['V'] = raw_imu_h;
 
+   // goal hander
+   handlers['L'] = goal_h;
+
    ros::init(argc, argv, "hardware_interface");
 
    ros::NodeHandle n;
@@ -437,6 +495,8 @@ int main(int argc, char ** argv) {
 
    ros::Subscriber cmd_sub = n.subscribe("cmd_vel", 1, cmdCallback);
 
+   ros::Subscriber goal_updates_sub = n.subscribe("goal_updates", 10, goalUpdateCallback);
+
    odo_pub = n.advertise<nav_msgs::Odometry>("odom", 10);
    //goalList_pub = n.advertise<goal_list::GoalList>("goal_list", 2);
    sonar_pub = n.advertise<sensor_msgs::Range>("sonar", 10);
@@ -446,6 +506,8 @@ int main(int argc, char ** argv) {
 
    compass_pub = n.advertise<geometry_msgs::Vector3Stamped>("magnetic", 10);
    imu_pub = n.advertise<geometry_msgs::TwistStamped>("velocity", 10);
+
+   goal_input_pub = n.advertise<hardware_interface::Goal>("goal_input", 10);
 
    diagnostic_updater::Updater updater;
    updater.setHardwareID("Dagny");
@@ -512,6 +574,14 @@ int main(int argc, char ** argv) {
          cmd_ready = 0;
       }
 
+      if( goal_ready ) {
+         cnt = write(serial, goal_packet.outbuf(), goal_packet.outsz());
+         if( cnt != goal_packet.outsz() ) {
+            ROS_ERROR("Failed to send goal update");
+         }
+         goal_ready = 0;
+      }
+
       // send heartbeat
       ++itr;
 
@@ -519,7 +589,7 @@ int main(int argc, char ** argv) {
       if( itr == 9 ) {
          heartbeat_packet.reset();
          heartbeat_packet.finish();
-         cnt =write(serial,heartbeat_packet.outbuf(),heartbeat_packet.outsz());
+         cnt = write(serial,heartbeat_packet.outbuf(),heartbeat_packet.outsz());
          itr = 0;
          bandwidth = bw * 2;
          bw = 0;

@@ -16,5 +16,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
+rosbuild_genmsg()
+
 rosbuild_add_executable(hardware_interface src/hardware_interface.cpp
       src/protocol.cpp src/steer.cpp)
