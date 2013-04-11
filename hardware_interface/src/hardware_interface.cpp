@@ -27,6 +27,7 @@
 #include <std_msgs/Bool.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
 #include <hardware_interface/Goal.h>
+#include <hardware_interface/Encoder.h>
 
 #include <diagnostic_updater/diagnostic_updater.h>
 
@@ -46,6 +47,8 @@ ros::Publisher sonar_pub;
 ros::Publisher gps_pub;
 ros::Publisher heading_pub;
 ros::Publisher bump_pub;
+
+ros::Publisher encoder_pub;
 
 // for publishing raw compass and IMU data
 ros::Publisher compass_pub;
@@ -71,7 +74,12 @@ void cmdCallback( const geometry_msgs::Twist::ConstPtr & cmd_vel ) {
    // 1/2 * 0.032 m / sec
    // 0.016 m / sec
    // target speed in units of 0.016 m / sec
-   int16_t target_speed = cmd_vel->linear.x * 62.5;
+   //
+   // internal speed specified as ticks/sec / 10
+   // ( 1 count = 0.08m )
+   // target speed in increments of 0.08 m/sec
+   // 1/0.08 = 12.5
+   int16_t target_speed = cmd_vel->linear.x * 12.5;
    // angular z > 0 is left
    // vr = vl / r
    // r = vl / vr
@@ -180,6 +188,8 @@ handler(gps_h) {
    int32_t lon = p.reads32();
    //ROS_INFO("GPS lat: %d lon: %d", lat, lon);
    sensor_msgs::NavSatFix gps;
+   gps.header.stamp = ros::Time::now();
+   gps.header.frame_id = "gps";
    gps.latitude = lat / 1000000.0;
    gps.longitude = lon / 1000000.0;
 
@@ -235,6 +245,15 @@ handler(odometry_h) {
    std_msgs::Bool bump;
    bump.data = (b != 0);
    bump_pub.publish(bump);
+
+   int16_t qcount = p.reads16();
+   int8_t steer = p.reads8();
+
+   hardware_interface::Encoder enc_msg;
+   enc_msg.header = odo_msg.header;
+   enc_msg.count = qcount;
+   enc_msg.steer = steer;
+   encoder_pub.publish(enc_msg);
 }
 
 FILE * battery_log;
@@ -498,11 +517,11 @@ int main(int argc, char ** argv) {
    ros::Subscriber goal_updates_sub = n.subscribe("goal_updates", 10, goalUpdateCallback);
 
    odo_pub = n.advertise<nav_msgs::Odometry>("odom", 10);
-   //goalList_pub = n.advertise<goal_list::GoalList>("goal_list", 2);
    sonar_pub = n.advertise<sensor_msgs::Range>("sonar", 10);
    gps_pub = n.advertise<sensor_msgs::NavSatFix>("gps", 10);
    heading_pub = n.advertise<std_msgs::Float32>("heading", 10);
    bump_pub = n.advertise<std_msgs::Bool>("bump", 10);
+   encoder_pub = n.advertise<hardware_interface::Encoder>("encoder", 10);
 
    compass_pub = n.advertise<geometry_msgs::Vector3Stamped>("magnetic", 10);
    imu_pub = n.advertise<geometry_msgs::TwistStamped>("velocity", 10);
