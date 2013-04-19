@@ -1,0 +1,7 @@
+<launch>
+   <group ns="top_cam">
+      <node pkg="uvc_camera" type="camera_node" name="camera_node">
+         <param name="device" value="/dev/video2"/>
+      </node>
+   </group>
+</launch>
