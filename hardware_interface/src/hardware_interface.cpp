@@ -486,9 +486,11 @@ int main(int argc, char ** argv) {
    // I'm going to hardcode the port and settings because this is hardware-
    // specific anyway
    // open serial port
-   int serial = open("/dev/ttyACM1", O_RDWR | O_NOCTTY);
+   string serial_port;
+   n.param<std::string>("port", serial_port, "/dev/ttyACM0");
+   int serial = open(serial_port.c_str(), O_RDWR | O_NOCTTY);
    if( serial < 0 ) {
-      perror("Failed to open /dev/ttyACM1");
+      perror(("Failed to open " + serial_port).c_str());
       // die. ungracefully.
       return -1;
    }
