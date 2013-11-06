@@ -129,6 +129,18 @@ void goalUpdateCallback( const hardware_interface::Goal::ConstPtr & goal) {
    return;
 }
 
+int compass_cal_ready = 0;
+char compass_cal_buf[128];
+Packet compass_cal_packet('O', sizeof(compass_cal_buf), compass_cal_buf);
+
+void compassCalCallback( const geometry_msgs::Vector3::ConstPtr & msg ) {
+   compass_cal_packet.append((float)msg->x);
+   compass_cal_packet.append((float)msg->y);
+   compass_cal_packet.append((float)msg->z);
+   compass_cal_packet.finish();
+   compass_cal_ready = 1;
+}
+
 #define handler(foo) void foo(Packet & p)
 typedef void (*handler_ptr)(Packet & p);
 
@@ -517,6 +529,7 @@ int main(int argc, char ** argv) {
    ros::Subscriber cmd_sub = n.subscribe("cmd_vel", 1, cmdCallback);
 
    ros::Subscriber goal_updates_sub = n.subscribe("goal_updates", 10, goalUpdateCallback);
+   ros::Subscriber compass_offset_sub = n.subscribe("compass_cal", 2, compassCalCallback);
 
    odo_pub = n.advertise<nav_msgs::Odometry>("odom", 10);
    sonar_pub = n.advertise<sensor_msgs::Range>("sonar", 10);
@@ -602,6 +615,16 @@ int main(int argc, char ** argv) {
          }
          goal_ready = 0;
       }
+
+      if( compass_cal_ready ) {
+         cnt = write(serial, compass_cal_packet.outbuf(), 
+               compass_cal_packet.outsz());
+         if( cnt != compass_cal_packet.outsz() ) {
+            ROS_ERROR("Failed to send compass update");
+         }
+         compass_cal_ready = 0;
+      }
+
 
       // send heartbeat
       ++itr;
