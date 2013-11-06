@@ -1,0 +1,4 @@
+<launch>
+   <node name="state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+   <param name="robot_description" textfile="$(find dagny_model)/dagny.urdf"/>
+</launch>
