@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package>
+  <name>dagny_model</name>
+  <version>0.1.0</version>
+  <description>Models of Dagny</description>
+
+  <maintainer email="namniart@gmail.com">Austin Hendrix</maintainer>
+
+  <license>BSD</license>
+
+  <author>Austin Hendrix</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>

@@ -9,7 +9,7 @@
 #include <ros/ros.h>
 
 #include <nav_msgs/Odometry.h>
-#include <hardware_interface/Control.h>
+#include <geometry_msgs/Twist.h>
 
 int main(int argc, char ** argv) {
    ros::init(argc, argv, "steer");
@@ -22,15 +22,15 @@ int main(int argc, char ** argv) {
 
    ros::NodeHandle n;
 
-   ros::Publisher control_pub = n.advertise<hardware_interface::Control>("control", 10);
+   ros::Publisher control_pub = n.advertise<geometry_msgs::Twist>("control", 10);
 
    ros::Rate loop_rate(100);
    ROS_INFO("Setting steering to %d", steer);
 
    while( ros::ok() ) {
-      hardware_interface::Control c;
-      c.speed = 0;
-      c.steer = steer;
+      geometry_msgs::Twist c;
+      c.linear.x = 0;
+      c.angular.z = steer;
       control_pub.publish(c);
 
       ros::spinOnce();

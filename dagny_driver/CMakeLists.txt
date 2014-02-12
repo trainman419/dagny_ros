@@ -1,22 +1,31 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 2.8.3)
+project(dagny_driver)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  std_msgs
+  sensor_msgs
+  nav_msgs
+  geometry_msgs
+  tf
+  diagnostic_msgs
+  message_generation)
 
-rosbuild_init()
+add_message_files(FILES Encoder.msg Goal.msg)
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+generate_messages(DEPENDENCIES std_msgs sensor_msgs)
 
-rosbuild_genmsg()
+catkin_package()
 
-rosbuild_add_executable(hardware_interface src/hardware_interface.cpp
-      src/protocol.cpp src/steer.cpp)
+include_directories(${catkin_INCLUDE_DIRS})
+
+add_executable(dagny_driver src/hardware_interface.cpp
+  src/protocol.cpp src/steer.cpp)
+target_link_libraries(dagny_driver ${catkin_LIBRARIES})
+add_dependencies(dagny_driver dagny_generate_messages_cpp)
+
+install(TARGETS dagny_driver
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )

@@ -6,7 +6,7 @@
 
    <include file="$(find dagny)/dagny_model.launch"/>
 
-   <node name="hardware" pkg="hardware_interface" type="hardware_interface" output="screen" respawn="true" />
+   <node name="dagny_driver" pkg="dagny_driver" type="dagny_driver" output="screen" respawn="true" />
    <param name="port" value="/dev/ttyO2"/>
 
    <include file="$(find dagny)/diagnostics.launch"/>

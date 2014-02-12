@@ -12,9 +12,8 @@
 #include <ros/ros.h>
 
 #include <nav_msgs/Odometry.h>
-#include <gps_common/GPSFix.h>
-#include <hardware_interface/Compass.h>
-#include <goal_list/GoalList.h>
+#include <sensor_msgs/NavSatFix.h>
+#include <std_msgs/Float32.h>
 
 double dist = 0.0;
 
@@ -34,12 +33,12 @@ void odoCallback(const nav_msgs::Odometry::ConstPtr & msg) {
    ROS_INFO("Odometry position (%lf, %lf, %lf)", x, y, theta);
 }
 
-void gpsCallback(const gps_common::GPSFix::ConstPtr & msg) {
+void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr & msg) {
    fprintf(logp, "G %lf %lf\n", msg->latitude, msg->longitude);
 }
 
-void compassCallback(const hardware_interface::Compass::ConstPtr & msg) {
-   fprintf(logp, "C %lf\n", msg->heading);
+void compassCallback(const std_msgs::Float32::ConstPtr & msg) {
+   fprintf(logp, "C %lf\n", msg->data);
 }
 
 void positionCallback(const nav_msgs::Odometry::ConstPtr & msg) {
@@ -52,13 +51,6 @@ void positionCallback(const nav_msgs::Odometry::ConstPtr & msg) {
          msg->pose.covariance[6*1 + 1], //yy
          msg->pose.pose.orientation.x,
          msg->pose.covariance[6*0 + 0]);
-}
-
-void goalsCallback(const goal_list::GoalList::ConstPtr & msg) {
-   std::vector<global_map::Location>::const_iterator itr;
-   for( itr = msg->goals.begin(); itr != msg->goals.end(); itr++ ) {
-      fprintf(logp, "g %d %d\n", itr->col, itr->row);
-   }
 }
 
 int main(int argc, char ** argv) {

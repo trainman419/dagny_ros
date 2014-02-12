@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package>
+  <name>dagny</name>
+  <version>0.1.0</version>
+  <description>Core tools and launch files for dagny</description>
+
+  <maintainer email="namniart@gmail.com">Austin Hendrix</maintainer>
+
+  <license>BSD</license>
+
+  <author>Austin Hendrix</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>rospy</run_depend>
+  <run_depend>uvc_camera</run_depend>
+  <run_depend>hokuyo_node</run_depend>
+  <run_depend>dagny_driver</run_depend>
+  <run_depend>robot_state_publisher</run_depend>
+  <run_depend>diagnostic_aggregator</run_depend>
+</package>

@@ -26,8 +26,8 @@
 #include <std_msgs/Float32.h>
 #include <std_msgs/Bool.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
-#include <hardware_interface/Goal.h>
-#include <hardware_interface/Encoder.h>
+#include <dagny_driver/Goal.h>
+#include <dagny_driver/Encoder.h>
 
 #include <diagnostic_updater/diagnostic_updater.h>
 
@@ -113,9 +113,9 @@ int goal_ready = 0;
 char goal_buf[32];
 Packet goal_packet('L', sizeof(goal_buf), goal_buf);
 
-void goalUpdateCallback( const hardware_interface::Goal::ConstPtr & goal) {
+void goalUpdateCallback( const dagny_driver::Goal::ConstPtr & goal) {
    switch( goal->operation ) {
-      case hardware_interface::Goal::SET_CURRENT:
+      case dagny_driver::Goal::SET_CURRENT:
          goal_packet.reset();
          goal_packet.append(goal->operation);
          goal_packet.append(goal->id);
@@ -261,7 +261,7 @@ handler(odometry_h) {
    int16_t qcount = p.reads16();
    int8_t steer = p.reads8();
 
-   hardware_interface::Encoder enc_msg;
+   dagny_driver::Encoder enc_msg;
    enc_msg.header = odo_msg.header;
    enc_msg.count = qcount;
    enc_msg.steer = steer;
@@ -372,16 +372,16 @@ handler(compass_h) {
 handler(goal_h) {
    int8_t op;
    op = p.reads8();
-   hardware_interface::Goal g;
+   dagny_driver::Goal g;
    g.operation = op;
    switch(op) {
-      case hardware_interface::Goal::APPEND:
+      case dagny_driver::Goal::APPEND:
          g.goal.latitude = p.reads32() / 1000000.0;
          g.goal.longitude = p.reads32() / 1000000.0;
          ROS_INFO("Add goal at lat %lf, lon %lf", g.goal.latitude, 
                g.goal.longitude);
          break;
-      case hardware_interface::Goal::DELETE:
+      case dagny_driver::Goal::DELETE:
          g.id = p.reads32();
          ROS_INFO("Remove goal at %d", g.id);
          break;
@@ -491,7 +491,7 @@ int main(int argc, char ** argv) {
    // goal hander
    handlers['L'] = goal_h;
 
-   ros::init(argc, argv, "hardware_interface");
+   ros::init(argc, argv, "dagny_driver");
 
    ros::NodeHandle n;
 
@@ -536,12 +536,12 @@ int main(int argc, char ** argv) {
    gps_pub = n.advertise<sensor_msgs::NavSatFix>("gps", 10);
    heading_pub = n.advertise<std_msgs::Float32>("heading", 10);
    bump_pub = n.advertise<std_msgs::Bool>("bump", 10);
-   encoder_pub = n.advertise<hardware_interface::Encoder>("encoder", 10);
+   encoder_pub = n.advertise<dagny_driver::Encoder>("encoder", 10);
 
    compass_pub = n.advertise<geometry_msgs::Vector3Stamped>("magnetic", 10);
    imu_pub = n.advertise<geometry_msgs::TwistStamped>("velocity", 10);
 
-   goal_input_pub = n.advertise<hardware_interface::Goal>("goal_input", 10);
+   goal_input_pub = n.advertise<dagny_driver::Goal>("goal_input", 10);
 
    diagnostic_updater::Updater updater;
    updater.setHardwareID("Dagny");
@@ -550,7 +550,7 @@ int main(int argc, char ** argv) {
    updater.add("I2C Status", i2c_diagnostics);
    updater.add("GPS Status", gps_diagnostics);
 
-   ROS_INFO("hardware_interface ready");
+   ROS_INFO("dagny_driver ready");
 
    ros::Rate loop_rate(20);
 

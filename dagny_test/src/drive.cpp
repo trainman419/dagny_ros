@@ -9,7 +9,7 @@
 #include <ros/ros.h>
 
 #include <nav_msgs/Odometry.h>
-#include <hardware_interface/Control.h>
+#include <geometry_msgs/Twist.h>
 
 double dist = 0.0;
 
@@ -19,7 +19,7 @@ double x = 0.0;
 double y = 0.0;
 double theta = 0.0;
 
-int steer;
+double steer;
 
 void odoCallback(const nav_msgs::Odometry::ConstPtr & msg) {
    x += msg->pose.pose.position.x;
@@ -28,14 +28,14 @@ void odoCallback(const nav_msgs::Odometry::ConstPtr & msg) {
 
    ROS_INFO("Odometry position (%lf, %lf, %lf)", x, y, theta);
 
-   hardware_interface::Control c;
+   geometry_msgs::Twist c;
 
    if( hypot(x, y) < dist ) {
-      c.speed = 15;
+      c.linear.x = 0.15;
    } else {
-      c.speed = 0;
+      c.linear.x = 0;
    }
-   c.steer = steer; // drive straight
+   c.angular.z = steer; // drive straight
 
    control_pub.publish(c);
 }
@@ -50,24 +50,23 @@ int main(int argc, char ** argv) {
    }
    if( argc == 3 ) {
       sscanf(argv[1], "%lf", &dist);
-      sscanf(argv[2], "%d", &steer);
-      ROS_INFO("Driving %lf units with steer %d", dist, steer);
+      sscanf(argv[2], "%lf", &steer);
+      ROS_INFO("Driving %lf units with steer %lf", dist, steer);
    }
 
    ros::NodeHandle n;
 
-   control_pub = n.advertise<hardware_interface::Control>("control", 10);
+   control_pub = n.advertise<geometry_msgs::Twist>("control", 10);
 
    ros::Subscriber s = n.subscribe("base_odometry", 10, odoCallback);
 
    while( hypot(x, y) < dist && ros::ok() ) {
       ros::spinOnce();
    }
-   hardware_interface::Control c;
-   c.speed = 0;
-   c.steer = 0;
+   geometry_msgs::Twist c;
+   c.linear.x = 0;
+   c.angular.z = 0;
    control_pub.publish(c);
-   //ros::spinOnce(
    ROS_INFO("Goal reached");
    return 0;
 }

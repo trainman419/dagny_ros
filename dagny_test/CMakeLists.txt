@@ -1,36 +1,34 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 2.8.3)
+project(dagny_test)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
+find_package(catkin REQUIRED COMPONENTS
+  geometry_msgs
+  sensor_msgs
+  std_msgs
+  nav_msgs
+  roscpp)
 
-rosbuild_init()
+catkin_package()
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+include_directories(${catkin_INCLUDE_DIRS})
 
-#uncomment if you have defined messages
-#rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
+add_executable(drive src/drive.cpp)
+target_link_libraries(drive ${catkin_LIBRARIES})
 
-#common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
-rosbuild_add_executable(drive src/drive.cpp)
-rosbuild_add_executable(count src/count.cpp)
-rosbuild_add_executable(steer src/steer.cpp)
-rosbuild_add_executable(log src/log.cpp)
-rosbuild_add_executable(square src/square.cpp)
-rosbuild_add_executable(laser src/laser.cpp)
+add_executable(count src/count.cpp)
+target_link_libraries(count ${catkin_LIBRARIES})
+
+add_executable(steer src/steer.cpp)
+target_link_libraries(steer ${catkin_LIBRARIES})
+
+add_executable(log src/log.cpp)
+target_link_libraries(log ${catkin_LIBRARIES})
+
+add_executable(laser src/laser.cpp)
+target_link_libraries(laser ${catkin_LIBRARIES})
+
+install(TARGETS drive count steer log laser
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
