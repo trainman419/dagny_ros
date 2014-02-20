@@ -305,19 +305,18 @@ handler(sonar_h) {
    uint8_t s;
    ros::Time n = ros::Time::now();
    sensor_msgs::Range sonar;
-   for( int i=0; i<NUM_SONARS; ++i ) {
-      s = p.readu8();
-      sonar.range = s * 0.0254; // convert inches to m
-      sonar.min_range = 6 * 0.0254;
-      sonar.max_range = 255 * 0.0254;
-      sonar.field_of_view = 45 * M_PI / 180.0; // approx 45-degree FOV
-      sonar.radiation_type = sensor_msgs::Range::ULTRASOUND;
+   int i = p.readu8();
+   s = p.readu8();
+   sonar.range = s * 0.0254; // convert inches to m
+   sonar.min_range = 6 * 0.0254;
+   sonar.max_range = 255 * 0.0254;
+   sonar.field_of_view = 45 * M_PI / 180.0; // approx 45-degree FOV
+   sonar.radiation_type = sensor_msgs::Range::ULTRASOUND;
 
-      sonar.header.stamp = n;
-      sonar.header.frame_id = sonar_frames[i];
+   sonar.header.stamp = n;
+   sonar.header.frame_id = sonar_frames[i];
 
-      sonar_pub.publish(sonar);
-   }
+   sonar_pub.publish(sonar);
 }
 
 handler(imu_h) {

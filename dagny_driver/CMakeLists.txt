@@ -22,7 +22,7 @@ include_directories(${catkin_INCLUDE_DIRS})
 add_executable(dagny_driver src/hardware_interface.cpp
   src/protocol.cpp src/steer.cpp)
 target_link_libraries(dagny_driver ${catkin_LIBRARIES})
-add_dependencies(dagny_driver dagny_generate_messages_cpp)
+add_dependencies(dagny_driver dagny_driver_generate_messages_cpp)
 
 install(TARGETS dagny_driver
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
