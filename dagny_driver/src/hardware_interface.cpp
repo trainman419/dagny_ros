@@ -28,6 +28,7 @@
 #include <diagnostic_msgs/DiagnosticArray.h>
 #include <dagny_driver/Goal.h>
 #include <dagny_driver/Encoder.h>
+#include <dagny_driver/Battery.h>
 
 #include <diagnostic_updater/diagnostic_updater.h>
 
@@ -53,6 +54,8 @@ ros::Publisher encoder_pub;
 // for publishing raw compass and IMU data
 ros::Publisher compass_pub;
 ros::Publisher imu_pub;
+
+ros::Publisher battery_pub;
 
 // for publishing user input about goals
 ros::Publisher goal_input_pub;
@@ -268,22 +271,6 @@ handler(odometry_h) {
    encoder_pub.publish(enc_msg);
 }
 
-FILE * battery_log;
-void battery_setup() {
-   char logfile[1024];
-   char date[256];
-   struct tm * timeptr;
-   time_t now = time(0);
-
-   timeptr = localtime(&now);
-   strftime(date, 256, "%F-%T", timeptr);
-   snprintf(logfile, 1024, "/home/hendrix/log/battery-%s.log", date);
-   battery_log = fopen(logfile, "w");
-   if( battery_log == NULL ) {
-      ROS_PERROR("Failed to open logfile");
-   }
-}
-
 uint16_t idle_cnt;
 uint8_t i2c_resets;
 
@@ -391,6 +378,16 @@ handler(goal_h) {
    goal_input_pub.publish(g);
 }
 
+handler(battery_h) {
+   uint8_t main = p.readu8();
+   uint8_t motor = p.readu8();
+   dagny_driver::Battery battery_msg;
+   battery_msg.header.stamp = ros::Time::now();
+   battery_msg.main_raw = main;
+   battery_msg.motor_raw = motor;
+   battery_pub.publish(battery_msg);
+}
+
 int bandwidth = 0;
 
 void idle_diagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) {
@@ -490,6 +487,9 @@ int main(int argc, char ** argv) {
    // goal hander
    handlers['L'] = goal_h;
 
+   // battery handler
+   handlers['B'] = battery_h;
+
    ros::init(argc, argv, "dagny_driver");
 
    ros::NodeHandle n;
@@ -539,6 +539,9 @@ int main(int argc, char ** argv) {
 
    compass_pub = n.advertise<geometry_msgs::Vector3Stamped>("magnetic", 10);
    imu_pub = n.advertise<geometry_msgs::TwistStamped>("velocity", 10);
+
+   // latched, so we can always pick up the most recent data
+   battery_pub = n.advertise<dagny_driver::Battery>("battery", 1, true);
 
    goal_input_pub = n.advertise<dagny_driver::Goal>("goal_input", 10);
 
