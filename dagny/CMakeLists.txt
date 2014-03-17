@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(dagny)
 
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED COMPONENTS roslaunch)
 
 catkin_package()
 
@@ -18,3 +18,8 @@ catkin_install_python(PROGRAMS
   bin/manual_cal.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+roslaunch_add_file_check( camera.launch )
+roslaunch_add_file_check( dagny.launch )
+roslaunch_add_file_check( dagny_model.launch )
+roslaunch_add_file_check( diagnostics.launch )
