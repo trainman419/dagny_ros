@@ -19,7 +19,9 @@ catkin_install_python(PROGRAMS
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-roslaunch_add_file_check( camera.launch )
-roslaunch_add_file_check( dagny.launch )
-roslaunch_add_file_check( dagny_model.launch )
-roslaunch_add_file_check( diagnostics.launch )
+if(CATKIN_ENABLE_TESTING)
+  roslaunch_add_file_check( camera.launch )
+  roslaunch_add_file_check( dagny.launch )
+  roslaunch_add_file_check( dagny_model.launch )
+  roslaunch_add_file_check( diagnostics.launch )
+endif()
