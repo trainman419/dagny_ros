@@ -1,0 +1,6 @@
+- git: {local-name: dagny_nav, uri: 'git@github.com:trainman419/dagny_nav.git'}
+- git: {local-name: dagny_ros, uri: 'git@github.com:trainman419/dagny_ros.git'}
+- git: {local-name: navigation_layers, uri: 'git@github.com:trainman419/navigation_layers.git'}
+- git: {local-name: dagny_sim, uri: 'git@github.com:trainman419/dagny_sim.git'}
+- git: {local-name: sbpl_lattice_planner, uri: 'git@github.com:trainman419/sbpl_lattice_planner.git'}
+- git: {local-name: ackermann_utils, uri: 'git@github.com:trainman419/ackermann_toolkit.git'}
