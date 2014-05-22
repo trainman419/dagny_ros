@@ -15,6 +15,7 @@
 #include <set>
 
 #include <ros/ros.h>
+#include <sensor_msgs/Imu.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Range.h>
 #include <sensor_msgs/NavSatFix.h>
@@ -330,14 +331,20 @@ handler(raw_imu_h) {
    ax = p.readfloat();
    ay = p.readfloat();
    az = p.readfloat();
-   geometry_msgs::TwistStamped imu;
+   sensor_msgs::Imu imu;
    imu.header.stamp = ros::Time::now();
-   imu.twist.angular.x = gx;
-   imu.twist.angular.y = gy;
-   imu.twist.angular.z = gz;
-   imu.twist.linear.x = ax;
-   imu.twist.linear.y = ay;
-   imu.twist.linear.z = az;
+
+   // we are providing gyro and accel data
+   // don't know covariances yet
+   imu.angular_velocity.x = gx;
+   imu.angular_velocity.y = gy;
+   imu.angular_velocity.z = gz;
+   imu.linear_acceleration.x = ax;
+   imu.linear_acceleration.y = ay;
+   imu.linear_acceleration.z = az;
+
+   // no orientation data
+   imu.orientation_covariance[0] = -1;
 
    imu_pub.publish(imu);
 }
@@ -538,7 +545,7 @@ int main(int argc, char ** argv) {
    encoder_pub = n.advertise<dagny_driver::Encoder>("encoder", 10);
 
    compass_pub = n.advertise<geometry_msgs::Vector3Stamped>("magnetic", 10);
-   imu_pub = n.advertise<geometry_msgs::TwistStamped>("velocity", 10);
+   imu_pub = n.advertise<sensor_msgs::Imu>("imu", 10);
 
    // latched, so we can always pick up the most recent data
    battery_pub = n.advertise<dagny_driver::Battery>("battery", 1, true);
