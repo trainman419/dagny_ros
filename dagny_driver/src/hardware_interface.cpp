@@ -138,11 +138,28 @@ char compass_cal_buf[128];
 Packet compass_cal_packet('O', sizeof(compass_cal_buf), compass_cal_buf);
 
 void compassCalCallback( const geometry_msgs::Vector3::ConstPtr & msg ) {
+   compass_cal_packet.reset();
    compass_cal_packet.append((float)msg->x);
    compass_cal_packet.append((float)msg->y);
    compass_cal_packet.append((float)msg->z);
    compass_cal_packet.finish();
    compass_cal_ready = 1;
+}
+
+int imu_cal_ready = 0;
+char imu_cal_buf[128]; // 6 * 4(float) * 2(escape) = 48 bytes max
+Packet imu_cal_packet('I', sizeof(imu_cal_buf), imu_cal_buf);
+
+void imuCalCallback( const geometry_msgs::Twist::ConstPtr & msg ) {
+   imu_cal_packet.reset();
+   imu_cal_packet.append((float)msg->angular.x);
+   imu_cal_packet.append((float)msg->angular.y);
+   imu_cal_packet.append((float)msg->angular.z);
+   imu_cal_packet.append((float)msg->linear.x);
+   imu_cal_packet.append((float)msg->linear.y);
+   imu_cal_packet.append((float)msg->linear.z);
+   imu_cal_packet.finish();
+   imu_cal_ready = 1;
 }
 
 #define handler(foo) void foo(Packet & p)
@@ -283,6 +300,7 @@ handler(idle_h) {
    idle_cnt = p.readu16();
    /* uint8_t i2c_fail = */ p.readu8();
    i2c_resets = p.readu8();
+   ROS_INFO("I2C state: %d", p.readu8());
 }
 
 #define NUM_SONARS 5
@@ -571,6 +589,7 @@ int main(int argc, char ** argv) {
 
    ros::Subscriber goal_updates_sub = n.subscribe("goal_updates", 10, goalUpdateCallback);
    ros::Subscriber compass_offset_sub = n.subscribe("compass_cal", 2, compassCalCallback);
+   ros::Subscriber imu_offset_sub = n.subscribe("imu_cal", 2, imuCalCallback);
 
    odo_pub = n.advertise<nav_msgs::Odometry>("odom", 10);
    sonar_pub = n.advertise<sensor_msgs::Range>("sonar", 10);
@@ -667,6 +686,15 @@ int main(int argc, char ** argv) {
             ROS_ERROR("Failed to send compass update");
          }
          compass_cal_ready = 0;
+      }
+
+      if( imu_cal_ready ) {
+         cnt = write(serial, imu_cal_packet.outbuf(), 
+               imu_cal_packet.outsz());
+         if( cnt != imu_cal_packet.outsz() ) {
+            ROS_ERROR("Failed to send imu update");
+         }
+         imu_cal_ready = 0;
       }
 
 
