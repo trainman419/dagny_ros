@@ -388,10 +388,45 @@ handler(goal_h) {
 handler(battery_h) {
    uint8_t main = p.readu8();
    uint8_t motor = p.readu8();
+   const uint8_t battery_max = 136;
+   const uint8_t battery_min = 119;
+   // below this, we assume we're on wall power
+   const uint8_t main_cutoff = 109;
+   // lower limit; don't report below this. I usually see about 25 when the
+   // motor power switch is OFF
+   const uint8_t motor_cutoff = 40;
    dagny_driver::Battery battery_msg;
    battery_msg.header.stamp = ros::Time::now();
    battery_msg.main_raw = main;
    battery_msg.motor_raw = motor;
+
+   // bounds checking
+   if( main > battery_max ) {
+      ROS_WARN("Main battery is above maximum: %d", main);
+   }
+   if( main < battery_min && main > main_cutoff ) {
+      ROS_WARN("Main battery is below minimum: %d", main);
+   }
+
+   if( motor > battery_max ) {
+      ROS_WARN("Motor battery is above maximum: %d", motor);
+   }
+   if( motor < battery_min && motor > motor_cutoff ) {
+      ROS_WARN("Motor battery is below minimum: %d", motor);
+   }
+
+   // compute very rough and wrong battery level
+   if( main <= main_cutoff ) {
+      battery_msg.main = 1.0;
+   } else {
+      battery_msg.main = float(main - battery_min)/(battery_max - battery_min);
+      battery_msg.main = min(max(battery_msg.main, 0.0f), 1.0f);
+   }
+
+   // motors can't run off wall power
+   battery_msg.motor = float(motor - battery_min)/(battery_max - battery_min);
+   battery_msg.motor = min(max(battery_msg.motor, 0.0f), 1.0f);
+
    battery_pub.publish(battery_msg);
 }
 
