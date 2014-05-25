@@ -10,29 +10,55 @@ from geometry_msgs.msg import Twist
 
 class SteeringCalibrator(object):
    def __init__(self):
-      self.timeout = rospy.get_param("~timeout", 10.0)
+      self.timeout = rospy.get_param("~timeout", 8.0)
       self.timeout = rospy.Duration(self.timeout)
 
-      self.rate = rospy.Rate(4.0)
+      self.speed = rospy.get_param("~speed", 0.5)
+
+      self.rate = rospy.Rate(2.0)
 
       self.imu_lock = threading.Lock()
       self.imu_buffer = []
 
       self.sub = rospy.Subscriber("imu", Imu, self.imu_cb)
       self.pub = rospy.Publisher("cmd_vel", Twist)
+      self.offset = None
+      self.current_offset = None
+      self.offset_time = rospy.Time.now()
       self.offset_pub = rospy.Publisher("steering_offset", Int8)
 
    def imu_cb(self, msg):
       self.imu_lock.acquire()
-      self.imu_buffer.append(msg)
+      diff = (rospy.Time.now() - self.offset_time).to_sec()
+      # angular lag while moving is about 0.2-0.3 seconds
+      if diff > 0.5:
+         self.imu_buffer.append(msg)
       self.imu_lock.release()
 
-   def pub_offset(self, offset):
+   def pub_offset(self):
+      # limit offset to +/- 10
+      if self.offset > 10:
+         rospy.logwarn("Capping offset to 10")
+         self.offset = 10
+      if self.offset < -10:
+         rospy.logwarn("Capping offset to -10")
+         self.offset = -10
+
+      rospy.loginfo("Trying offset %d" % ( self.offset ))
+
       msg = Int8()
-      msg.data = offset
+      msg.data = self.offset
+      if self.current_offset != self.offset:
+         self.imu_lock.acquire()
+         self.offset_time = rospy.Time.now()
+         self.current_offset = self.offset
+         self.imu_buffer = []
+         self.imu_lock.release()
       self.offset_pub.publish(msg)
 
-   def pub_speed(self, speed):
+   def pub_speed(self, speed=None):
+      if speed is None:
+         speed = self.speed
       msg = Twist()
       msg.linear.x = speed 
       self.pub.publish(msg)
@@ -40,14 +66,18 @@ class SteeringCalibrator(object):
    def run(self):
       rospy.loginfo("Calibrating steering servo for %s seconds" % (
                str(self.timeout) ))
-      # TODO: publish zero offset to start
-      offset = 0
-      self.pub_offset(offset)
+      # publish zero offset to start
+      self.offset = 0
+      self.pub_offset()
+
+      # reset internal state while we get moving
+      self.current_offset = None
 
       # publish velocity command
-      self.pub_speed(1.5)
+      self.pub_speed()
       # sleep a little to let things get moving
-      rospy.sleep(0.1)
+      rospy.sleep(1.0)
+      self.pub_offset()
 
       offset_drift = {}
 
@@ -68,10 +98,10 @@ class SteeringCalibrator(object):
                      average_yaw, yaw_samples ))
 
             # put the average yaw rate into a separate buffer
-            if offset not in offset_drift:
-               offset_drift[offset] = numpy.array([])
+            if self.offset not in offset_drift:
+               offset_drift[self.offset] = numpy.array([])
 
-            offset_drift[offset] = numpy.append(offset_drift[offset],
+            offset_drift[self.offset] = numpy.append(offset_drift[self.offset],
                                                 average_yaw)
 
             # look at the last few average samples to determine how to adjust
@@ -84,10 +114,10 @@ class SteeringCalibrator(object):
 
             if len(median_offset) < 2:
                # bootstrap with a random guess to get the slope
-               if median_offset[0] < 0:
-                  offset = 2
+               if median_offset[0] > 0:
+                  self.offset = 2
                else:
-                  offset = -2
+                  self.offset = -2
             else:
                # do we have an inversion point?
                # find minimum positive value
@@ -107,13 +137,20 @@ class SteeringCalibrator(object):
                if min_pos is not None and max_neg is not None:
                   # yes; zero in on inversion point
                   rospy.loginfo("Inversion found; improving approximation")
+                  if min_pos - max_neg > 1:
+                     self.offset = min_pos - 1
+                  else:
+                     if len(offset_drift[min_pos]) > len(offset_drift[max_neg]):
+                        self.offset = max_neg
+                     else:
+                        self.offset = min_pos
                else:
                   # no; approximate slope and try an entirely new offset
                   rospy.loginfo("Looking for inversion point")
-
+                  self.offset = self.offset * 2
+                  
             # publish an adjustment to the steering angle
-            rospy.loginfo("Trying offset %d" % ( offset ))
-            self.pub_offset(offset)
+            self.pub_offset()
          else:
             rospy.logwarn("Didn't get any IMU samples!")
 
@@ -123,7 +160,7 @@ class SteeringCalibrator(object):
          rospy.loginfo("%5.2f%%" % ( pct ))
 
          # publish velocity command
-         self.pub_speed(1.5)
+         self.pub_speed()
          # sleep and repeat
          self.rate.sleep()
          now = rospy.Time.now()
@@ -131,6 +168,9 @@ class SteeringCalibrator(object):
       # publish a stop message
       self.pub_speed(0.0)
       rospy.loginfo("100.00%%")
+
+      # dump all of the raw data we collected
+      print offset_drift
 
 
 def main():
