@@ -26,6 +26,7 @@
 #include <tf/transform_broadcaster.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Int8.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
 #include <dagny_driver/Goal.h>
 #include <dagny_driver/Encoder.h>
@@ -160,6 +161,17 @@ void imuCalCallback( const geometry_msgs::Twist::ConstPtr & msg ) {
    imu_cal_packet.append((float)msg->linear.z);
    imu_cal_packet.finish();
    imu_cal_ready = 1;
+}
+
+int steering_offset_ready = 0;
+char steering_offset_buf[128]; // 6 * 4(float) * 2(escape) = 48 bytes max
+Packet steering_offset_packet('S', sizeof(steering_offset_buf), steering_offset_buf);
+
+void steeringOffsetCallback( const std_msgs::Int8::ConstPtr & msg ) {
+   steering_offset_packet.reset();
+   steering_offset_packet.append(msg->data);
+   steering_offset_packet.finish();
+   steering_offset_ready = 1;
 }
 
 #define handler(foo) void foo(Packet & p)
@@ -590,6 +602,8 @@ int main(int argc, char ** argv) {
    ros::Subscriber goal_updates_sub = n.subscribe("goal_updates", 10, goalUpdateCallback);
    ros::Subscriber compass_offset_sub = n.subscribe("compass_cal", 2, compassCalCallback);
    ros::Subscriber imu_offset_sub = n.subscribe("imu_cal", 2, imuCalCallback);
+   ros::Subscriber steering_offset_sub = n.subscribe("steering_offset",
+         2, steeringOffsetCallback);
 
    odo_pub = n.advertise<nav_msgs::Odometry>("odom", 10);
    sonar_pub = n.advertise<sensor_msgs::Range>("sonar", 10);
@@ -697,6 +711,14 @@ int main(int argc, char ** argv) {
          imu_cal_ready = 0;
       }
 
+      if( steering_offset_ready ) {
+         cnt = write(serial, steering_offset_packet.outbuf(), 
+               steering_offset_packet.outsz());
+         if( cnt != steering_offset_packet.outsz() ) {
+            ROS_ERROR("Failed to send imu update");
+         }
+         steering_offset_ready = 0;
+      }
 
       // send heartbeat
       ++itr;
