@@ -27,6 +27,7 @@
 #include <std_msgs/Float32.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Int8.h>
+#include <std_msgs/UInt8.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
 #include <dagny_driver/Goal.h>
 #include <dagny_driver/Encoder.h>
@@ -56,6 +57,7 @@ ros::Publisher encoder_pub;
 // for publishing raw compass and IMU data
 ros::Publisher compass_pub;
 ros::Publisher imu_pub;
+ros::Publisher i2c_fail_pub;
 
 ros::Publisher battery_pub;
 
@@ -310,9 +312,11 @@ handler(idle_h) {
    // uint8_t i2c_failures
    // uint8_t i2c_resets
    idle_cnt = p.readu16();
-   /* uint8_t i2c_fail = */ p.readu8();
+   std_msgs::UInt8 i2c_fail;
+   i2c_fail.data = p.readu8();
    i2c_resets = p.readu8();
    ROS_INFO("I2C state: %d", p.readu8());
+   i2c_fail_pub.publish(i2c_fail);
 }
 
 #define NUM_SONARS 5
@@ -614,6 +618,7 @@ int main(int argc, char ** argv) {
 
    compass_pub = n.advertise<geometry_msgs::Vector3Stamped>("magnetic", 10);
    imu_pub = n.advertise<sensor_msgs::Imu>("imu", 10);
+   i2c_fail_pub = n.advertise<std_msgs::UInt8>("i2c_fail", 10);
 
    // latched, so we can always pick up the most recent data
    battery_pub = n.advertise<dagny_driver::Battery>("battery", 1, true);
