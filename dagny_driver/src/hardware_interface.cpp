@@ -240,10 +240,30 @@ handler(gps_h) {
    gps.latitude = lat / 1000000.0;
    gps.longitude = lon / 1000000.0;
 
+   // pass altitude up from driver
+   int32_t altitude = p.reads32(); // altitude in centimeters
+   gps.altitude = altitude / 100.0;
+
+
    // fill in static data
    gps.status.service = sensor_msgs::NavSatStatus::SERVICE_GPS;
    gps.position_covariance_type = 
       sensor_msgs::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
+
+   // pass HDOP up from driver
+   uint32_t hdop_100 = p.readu32(); // HDOP * 100
+   double hdop = hdop_100 / 100.0;
+   // covariance from HDOP calculation borrowd from nmea_navsat driver
+   gps.position_covariance[0] = hdop*hdop;
+   gps.position_covariance[4] = hdop*hdop;
+   gps.position_covariance[8] = (2*hdop)*(2*hdop); // FIXME
+   if( hdop_100 == 0 ) {
+      gps.position_covariance_type =
+         sensor_msgs::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
+   } else {
+      gps.position_covariance_type =
+         sensor_msgs::NavSatFix::COVARIANCE_TYPE_APPROXIMATED;
+   }
 
    // publish
    gps_pub.publish(gps);
@@ -315,7 +335,7 @@ handler(idle_h) {
    std_msgs::UInt8 i2c_fail;
    i2c_fail.data = p.readu8();
    i2c_resets = p.readu8();
-   ROS_INFO("I2C state: %d", p.readu8());
+   //ROS_INFO("I2C state: %d", p.readu8());
    i2c_fail_pub.publish(i2c_fail);
 }
 
@@ -491,7 +511,7 @@ void bandwidth_diagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) {
    } else if( bandwidth < 1000 ) {
       stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
             "Warning: Low AVR bandwidth");
-   } else if( bandwidth > 1400 ) {
+   } else if( bandwidth > 1500 ) {
       stat.summary(diagnostic_msgs::DiagnosticStatus::WARN,
             "Warning: High AVR bandwidth");
    } else {
