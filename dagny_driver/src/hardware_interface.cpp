@@ -387,6 +387,7 @@ handler(raw_imu_h) {
    az = p.readfloat();
    sensor_msgs::Imu imu;
    imu.header.stamp = ros::Time::now();
+   imu.header.frame_id = "base_link";
 
    // we are providing gyro and accel data
    // don't know covariances yet
@@ -396,6 +397,68 @@ handler(raw_imu_h) {
    imu.linear_acceleration.x = ax;
    imu.linear_acceleration.y = ay;
    imu.linear_acceleration.z = az;
+
+   /* Analysis of gyro and accelerometer bias
+Analyzing 10019 samples
+Gyro bias [ 0.00445241  0.00769426  0.00205139]
+Gyro covariance 
+[[  5.95420731e-07   9.98214066e-08   2.42934262e-08]
+ [  9.98214066e-08   6.01292941e-07   5.17353335e-08]
+ [  2.42934262e-08   5.17353335e-08   2.66484062e-07]]
+Accelerometer bias [  0.06085436   0.26828517 -10.04750346]
+Accelerometer covaraince 
+[[ 0.48834601  0.06811885 -0.17546435]
+ [ 0.06811885  0.22851019 -0.262803  ]
+ [-0.17546435 -0.262803    0.74666544]]
+
+Analyzing 10002 samples
+Gyro bias [ 0.00070364  0.00198244  0.00054909]
+Gyro covariance 
+[[  6.73927948e-07   3.19005125e-08   1.02816917e-08]
+ [  3.19005125e-08   5.00567915e-07   1.76859385e-08]
+ [  1.02816917e-08   1.76859385e-08   3.04065499e-07]]
+Accelerometer bias [-0.01961441 -0.04073214 -9.72075944]
+Accelerometer covaraince 
+[[ 0.41593466  0.04711931 -0.17112025]
+ [ 0.04711931  0.18881759 -0.231505  ]
+ [-0.17112025 -0.231505    0.67130527]]
+
+Analyzing 1007 samples
+Gyro bias [-0.0106572  -0.03959371 -0.12854336]
+Gyro covariance 
+[[  8.46049026e-07   6.01570997e-09   8.28312447e-09]
+ [  6.01570997e-09   3.67726194e-07  -1.30979674e-08]
+ [  8.28312447e-09  -1.30979674e-08   2.98437229e-07]]
+Accelerometer bias [ 0.18425708  0.41223157 -9.11863052]
+Accelerometer covaraince 
+[[ 0.16192873  0.0078776  -0.05683903]
+ [ 0.0078776   0.09970528 -0.0982002 ]
+ [-0.05683903 -0.0982002   0.30818165]]
+
+Analyzing 10009 samples
+Gyro bias [  4.48896858e-05   4.73079522e-04   6.43365116e-05]
+Gyro covariance 
+[[  8.98930371e-07   1.76998656e-08   2.23517490e-09]
+ [  1.76998656e-08   4.18385259e-07  -2.29157393e-10]
+ [  2.23517490e-09  -2.29157393e-10   3.00280631e-07]]
+Accelerometer bias [ 0.01731151  0.01019684 -9.80573254]
+Accelerometer covaraince 
+[[ 0.14006225  0.0123979  -0.05739361]
+ [ 0.0123979   0.08528796 -0.07799387]
+ [-0.05739361 -0.07799387  0.25775234]]
+
+Analyzing 10011 samples
+Gyro bias [-0.00011972 -0.00025375  0.00016198]
+Gyro covariance 
+[[  8.83834931e-07   3.17464674e-08  -5.98197474e-09]
+ [  3.17464674e-08   4.45522774e-07  -1.37527660e-08]
+ [ -5.98197474e-09  -1.37527660e-08   3.10821882e-07]]
+Accelerometer bias [ -6.89599977e-03  -5.49639670e-03  -9.81453175e+00]
+Accelerometer covaraince 
+[[ 0.13798447  0.01432473 -0.06066546]
+ [ 0.01432473  0.0873555  -0.08171402]
+ [-0.06066546 -0.08171402  0.26964842]]
+*/
 
    // no orientation data
    imu.orientation_covariance[0] = -1;
