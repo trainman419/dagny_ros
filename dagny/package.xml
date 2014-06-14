@@ -20,4 +20,6 @@
   <run_depend>robot_state_publisher</run_depend>
   <run_depend>diagnostic_aggregator</run_depend>
   <run_depend>roslaunch</run_depend>
+  <run_depend>graft</run_depend>
+  <run_depend>imu_pipeline</run_depend>
 </package>
