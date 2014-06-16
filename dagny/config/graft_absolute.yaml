@@ -5,7 +5,9 @@ child_frame_id: test_link #TF frame id
 
 freq: 10.0 # In Hz, param name ported from robot_pose_ekf
 update_rate: 10.0 # Overides 'freq' if set, in Hz
-update_topic: odom # Which topic to trigger updates, if blank, uses timed update_rate, if '*', will trigger on all new topics
+
+# update_topic isn't used internally; updates appear to be done on timer only
+#update_topic: odom # Which topic to trigger updates, if blank, uses timed update_rate, if '*', will trigger on all new topics
 
 dt_override : 0.0 # Override the dt for update_rate or update_topic, ignored if 0
 
@@ -20,23 +22,23 @@ kappa: 0.0
 beta: 2.0
 
 # Process noise covariance 2x2 for velocites, 5x5 for 2d position
-process_noise: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ]
+process_noise: [1e0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 1e0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1e0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 1e1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 1e1, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 1e1, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 1e1, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 1e1, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 1e1, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 1e1, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1e1, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1e1, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1e1 ]
 
-initial_covariance: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                     0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                     0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+initial_covariance: [1e-2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                     0, 1e-2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                     0, 0, 1e-2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                      0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                      0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
                      0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
@@ -55,7 +57,7 @@ topics: {
     absolute_pose: False,
     use_velocities: True,
     delta_pose: False,
-    timeout: 1.0,
+    timeout: 2.0,
     # override covariance       x,    y,    z,    roll, pitch, yaw
     override_pose_covariance: [ 0.01,  0.0,  0.0,  0.0,  0.0,   0.0,
                                 0.0,  0.01,  0.0,  0.0,  0.0,   0.0,
@@ -63,8 +65,8 @@ topics: {
                                 0.0,  0.0,  0.0,  10.0, 0.0,   0.0,
                                 0.0,  0.0,  0.0,  0.0,  10.0,  0.0,
                                 0.0,  0.0,  0.0,  0.0,  0.0,   0.4 ],
-    override_twist_covariance: [ 0.04,  0.0,  0.0,  0.0,  0.0,   0.0,
-                                 0.0,  0.04,  0.0,  0.0,  0.0,   0.0,
+    override_twist_covariance: [ 0.01,  0.0,  0.0,  0.0,  0.0,   0.0,
+                                 0.0,  0.01,  0.0,  0.0,  0.0,   0.0,
                                  0.0,  0.0,  0.2,  0.0,  0.0,   0.0,
                                  0.0,  0.0,  0.0,  10.0, 0.0,   0.0,
                                  0.0,  0.0,  0.0,  0.0,  10.0,  0.0,
@@ -77,7 +79,7 @@ topics: {
     absolute_orientation: False,
     use_velocities: True,
     use_accelerations: False,
-    timeout: 1.0,
+    timeout: 2.0,
     # override covariances
     override_linear_acceleration_covariance: [ 0.14,  0.012,  -0.057,
                                                0.012, 0.085,  -0.078,
@@ -87,6 +89,9 @@ topics: {
                                              2.24e-09, -2.29e-10, 3.00e-07],
   },
 
+  # the filter diverges if I don't have absolute position estimates,
+  # and it converges too closely to the GPS data if I do include it in the
+  # filter
   gps: {
     topic: /gps_odom,
     type: nav_msgs/Odometry,
@@ -94,5 +99,16 @@ topics: {
     delta_pose: False,
     absolute_pose: True,
     timeout: 1.0,
-  }
+  },
+
+  # alternate absolute position input
+#  compass: {
+#    topic: /compass_imu,
+#    type: sensor_msgs/Imu,
+#    #absolute_orientation: True,
+#    delta_orientation: True,
+#    use_velocities: False,
+#    use_accelerations: False,
+#    timeout: 1.0
+#  },
 }
