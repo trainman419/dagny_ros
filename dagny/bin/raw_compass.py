@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from math import atan2
+from math import atan2, pi
 
 import rospy
 import tf
@@ -20,6 +20,13 @@ x_scale = 1.0
 
 y_center = -0.1
 y_scale = 1.0
+
+# compass std dev in degrees
+compass_dev = 0.1
+
+# compass variance in radians
+compass_var = compass_dev *pi / 180.0
+compass_var = compass_var * compass_var
 
 autocompute = False
 
@@ -47,13 +54,13 @@ def magnetic_cb(msg):
 
     imu = Imu()
     imu.header = msg.header
-    imu.header.frame_id = 'base_link'
+    imu.header.frame_id = 'odom'
     q = tf.transformations.quaternion_from_euler(0, 0, heading)
     imu.orientation = Quaternion(*q)
 
-    imu.orientation_covariance = [ 0.1, 0.0, 0.0,
-                                   0.0, 0.1, 0.0,
-                                   0.0, 0.0, 0.1 ]
+    imu.orientation_covariance = [ compass_var, 0.0, 0.0,
+                                   0.0, compass_var, 0.0,
+                                   0.0, 0.0, compass_var ]
 
     imu.angular_velocity_covariance = [ -1, 0, 0,
                                          0, 0, 0,
