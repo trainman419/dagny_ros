@@ -45,13 +45,13 @@ topics: {
                                 0.0,  0.0,  0.1,  0.0,  0.0,   0.0,
                                 0.0,  0.0,  0.0,  10.0, 0.0,   0.0,
                                 0.0,  0.0,  0.0,  0.0,  10.0,  0.0,
-                                0.0,  0.0,  0.0,  0.0,  0.0,   0.4 ],
+                                0.0,  0.0,  0.0,  0.0,  0.0,   0.2 ],
     override_twist_covariance: [ 0.2,  0.0,  0.0,  0.0,  0.0,   0.0,
                                  0.0,  0.2,  0.0,  0.0,  0.0,   0.0,
                                  0.0,  0.0,  0.2,  0.0,  0.0,   0.0,
                                  0.0,  0.0,  0.0,  10.0, 0.0,   0.0,
                                  0.0,  0.0,  0.0,  0.0,  10.0,  0.0,
-                                 0.0,  0.0,  0.0,  0.0,  0.0,   0.4 ],
+                                 0.0,  0.0,  0.0,  0.0,  0.0,   0.2 ],
   },
 
   imu: {
@@ -70,12 +70,12 @@ topics: {
                                              2.24e-09, -2.29e-10, 3.00e-07],
   },
 
-  gps: {
-    topic: /gps_odom,
-    type: nav_msgs/Odometry,
+  compass: {
+    topic: /compass_imu,
+    type: sensor_msgs/Imu,
+    absolute_orientation: True,
     use_velocities: False,
-    delta_pose: False,
-    absolute_pose: True,
-    timeout: 1.0,
+    use_accelerations: False,
+    timeout: 1.0
   }
 }
