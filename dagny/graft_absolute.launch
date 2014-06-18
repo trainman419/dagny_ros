@@ -13,8 +13,8 @@
     <param name="relative" value="true"/>
     <param name="fix_hdop" value="true"/>
 
-    <param name="imu_topic" value="compass_imu"/>
     <!--
+    <param name="imu_topic" value="compass_imu"/>
     <param name="compass_topic" value="heading"/>
     <param name="compass_variance" value="0.05"/>
     -->

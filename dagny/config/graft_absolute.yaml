@@ -66,12 +66,12 @@ topics: {
                                 0.0,  0.0,  0.0,  10.0, 0.0,   0.0,
                                 0.0,  0.0,  0.0,  0.0,  10.0,  0.0,
                                 0.0,  0.0,  0.0,  0.0,  0.0,   0.4 ],
-    override_twist_covariance: [ 0.01,  0.0,  0.0,  0.0,  0.0,   0.0,
-                                 0.0,  0.01,  0.0,  0.0,  0.0,   0.0,
+    override_twist_covariance: [ 0.02,  0.0,  0.0,  0.0,  0.0,   0.0,
+                                 0.0,  0.02,  0.0,  0.0,  0.0,   0.0,
                                  0.0,  0.0,  0.2,  0.0,  0.0,   0.0,
                                  0.0,  0.0,  0.0,  10.0, 0.0,   0.0,
                                  0.0,  0.0,  0.0,  0.0,  10.0,  0.0,
-                                 0.0,  0.0,  0.0,  0.0,  0.0,   0.4 ],
+                                 0.0,  0.0,  0.0,  0.0,  0.0,   40.0 ],
   },
 
   imu: {
@@ -103,13 +103,13 @@ topics: {
   },
 
   # alternate absolute position input
-#  compass: {
-#    topic: /compass_imu,
-#    type: sensor_msgs/Imu,
-#    #absolute_orientation: True,
-#    delta_orientation: True,
-#    use_velocities: False,
-#    use_accelerations: False,
-#    timeout: 1.0
-#  },
+  compass: {
+    topic: /compass_imu,
+    type: sensor_msgs/Imu,
+    absolute_orientation: True,
+    delta_orientation: False,
+    use_velocities: False,
+    use_accelerations: False,
+    timeout: 1.0
+  },
 }
