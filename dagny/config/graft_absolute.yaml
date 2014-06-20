@@ -1,7 +1,7 @@
 planar_output: False # Output only x, y, and rotation about z
 
-parent_frame_id: odom # TF frame id, override output_frame if set
-child_frame_id: test_link #TF frame id
+parent_frame_id: utm_local # TF frame id, override output_frame if set
+child_frame_id: odom_combined #TF frame id
 
 freq: 10.0 # In Hz, param name ported from robot_pose_ekf
 update_rate: 10.0 # Overides 'freq' if set, in Hz

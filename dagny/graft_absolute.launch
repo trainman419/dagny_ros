@@ -7,17 +7,8 @@
     <remap from="fix" to="gps"/>
     <remap from="odom" to="gps_odom"/>
 
-    <param name="frame_id" value="odom"/>
-    <param name="child_frame_id" value="base_link"/>
-
     <param name="relative" value="true"/>
     <param name="fix_hdop" value="true"/>
-
-    <!--
-    <param name="imu_topic" value="compass_imu"/>
-    <param name="compass_topic" value="heading"/>
-    <param name="compass_variance" value="0.05"/>
-    -->
   </node>
 
   <node name="imu_bias_remover" pkg="imu_pipeline" type="imu_bias_remover">
