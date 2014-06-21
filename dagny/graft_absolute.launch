@@ -2,19 +2,4 @@
   <node name="graft_abs" pkg="graft" type="graft_ukf_absolute" output="screen">
     <rosparam file="$(find dagny)/config/graft_absolute.yaml" command="load" />
   </node>
-
-  <node name="gps_utm" pkg="utm_tf_publisher" type="utm_tf_publisher" output="screen">
-    <remap from="fix" to="gps"/>
-    <remap from="odom" to="gps_odom"/>
-
-    <param name="relative" value="true"/>
-    <param name="fix_hdop" value="true"/>
-  </node>
-
-  <node name="imu_bias_remover" pkg="imu_pipeline" type="imu_bias_remover">
-    <param name="use_odom" value="true"/>
-  </node>
-
-  <node name="raw_compass" pkg="dagny" type="raw_compass.py"/>
-
 </launch>

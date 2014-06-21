@@ -10,4 +10,19 @@
    <param name="port" value="/dev/ttyO2"/>
 
    <include file="$(find dagny)/diagnostics.launch"/>
+
+  <node name="raw_compass" pkg="dagny" type="raw_compass.py"/>
+
+  <node name="imu_bias_remover" pkg="imu_pipeline" type="imu_bias_remover">
+    <param name="use_odom" value="true"/>
+    <param name="accumulator_alpha" value="0.01"/>
+  </node>
+
+  <node name="gps_utm" pkg="utm_tf_publisher" type="utm_tf_publisher" output="screen">
+    <remap from="fix" to="gps"/>
+    <remap from="odom" to="gps_odom"/>
+
+    <param name="relative" value="true"/>
+    <param name="fix_hdop" value="true"/>
+  </node>
 </launch>
