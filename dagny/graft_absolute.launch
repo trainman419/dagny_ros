@@ -1,5 +1,6 @@
 <launch>
-  <node name="graft_abs" pkg="graft" type="graft_ukf_absolute" output="screen">
+  <node name="graft_abs" pkg="graft" type="graft_ukf_absolute" output="screen"
+        respawn="true">
     <rosparam file="$(find dagny)/config/graft_absolute.yaml" command="load" />
   </node>
 </launch>
