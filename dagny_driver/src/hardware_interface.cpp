@@ -71,6 +71,7 @@ ros::Publisher diagnostics_pub;
 int cmd_ready = 0;
 char cmd_buf[12];
 Packet cmd_packet('C', 12, cmd_buf);
+ros::Time last_cmd_t;
 
 // TODO: subscribe to ackermann_msgs::AckermannDrive too/instead
 void cmdCallback( const geometry_msgs::Twist::ConstPtr & cmd_vel ) {
@@ -108,6 +109,8 @@ void cmdCallback( const geometry_msgs::Twist::ConstPtr & cmd_vel ) {
          steer = tmp;
       }
    }
+
+   last_cmd_t = ros::Time::now();
 
    cmd_packet.reset();
    cmd_packet.append(target_speed);
@@ -505,13 +508,13 @@ handler(goal_h) {
 handler(battery_h) {
    uint8_t main = p.readu8();
    uint8_t motor = p.readu8();
-   const uint8_t battery_max = 136;
-   const uint8_t battery_min = 119;
+   const uint8_t battery_max = 84;
+   const uint8_t battery_min = 70;
    // below this, we assume we're on wall power
-   const uint8_t main_cutoff = 109;
-   // lower limit; don't report below this. I usually see about 25 when the
+   const uint8_t main_cutoff = 60; // TODO: update properly for LiPo batteries
+   // lower limit; don't report below this. I usually see 1 or 2 when the
    // motor power switch is OFF
-   const uint8_t motor_cutoff = 40;
+   const uint8_t motor_cutoff = 4;
    dagny_driver::Battery battery_msg;
    battery_msg.header.stamp = ros::Time::now();
    battery_msg.main_raw = main;
@@ -522,14 +525,14 @@ handler(battery_h) {
       ROS_WARN("Main battery is above maximum: %d", main);
    }
    if( main < battery_min && main > main_cutoff ) {
-      ROS_WARN("Main battery is below minimum: %d", main);
+      ROS_WARN("Main battery is low: %d", main);
    }
 
    if( motor > battery_max ) {
       ROS_WARN("Motor battery is above maximum: %d", motor);
    }
    if( motor < battery_min && motor > motor_cutoff ) {
-      ROS_WARN("Motor battery is below minimum: %d", motor);
+      ROS_WARN("Motor battery is low: %d", motor);
    }
 
    // compute very rough and wrong battery level
@@ -653,6 +656,8 @@ int main(int argc, char ** argv) {
 
    ros::NodeHandle n;
 
+   last_cmd_t = ros::Time::now();
+
    // I'm going to hardcode the port and settings because this is hardware-
    // specific anyway
    // open serial port
@@ -718,6 +723,7 @@ int main(int argc, char ** argv) {
    ROS_INFO("dagny_driver ready");
 
    ros::Rate loop_rate(20);
+   ros::Time now;
 
    int itr = 0;
    int bw = 0;
@@ -756,6 +762,7 @@ int main(int argc, char ** argv) {
       bw += cnt;
       
       ros::spinOnce();
+      now = ros::Time::now();
 
       if( laser_ready ) {
          cnt = write(serial, "L", 1);
@@ -765,6 +772,21 @@ int main(int argc, char ** argv) {
       }
 
       if( cmd_ready ) {
+         cnt = write(serial, cmd_packet.outbuf(), cmd_packet.outsz());
+         //ROS_INFO("cmd_vel sent");
+         if( cnt != cmd_packet.outsz() ) {
+            ROS_ERROR("Failed to send cmd_vel data");
+         }
+         cmd_ready = 0;
+      } else if( now - last_cmd_t > ros::Duration(1.0) ) {
+         last_cmd_t = now;
+         ROS_WARN("Command timeout; restting to 0");
+         // command timeout; send zero
+         cmd_packet.reset();
+         cmd_packet.append(uint16_t(0));
+         cmd_packet.append(int8_t(0));
+         cmd_packet.finish();
+
          cnt = write(serial, cmd_packet.outbuf(), cmd_packet.outsz());
          //ROS_INFO("cmd_vel sent");
          if( cnt != cmd_packet.outsz() ) {
