@@ -18,7 +18,7 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Range.h>
-#include <sensor_msgs/NavSatFix.h>
+#include <dagny_driver/NavSatFix.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/TwistStamped.h>
@@ -237,7 +237,7 @@ handler(gps_h) {
    int32_t lat = p.reads32();
    int32_t lon = p.reads32();
    //ROS_INFO("GPS lat: %d lon: %d", lat, lon);
-   sensor_msgs::NavSatFix gps;
+   dagny_driver::NavSatFix gps;
    gps.header.stamp = ros::Time::now();
    gps.header.frame_id = "gps";
    gps.latitude = lat / 1000000.0;
@@ -251,7 +251,7 @@ handler(gps_h) {
    // fill in static data
    gps.status.service = sensor_msgs::NavSatStatus::SERVICE_GPS;
    gps.position_covariance_type = 
-      sensor_msgs::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
+      dagny_driver::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
 
    // pass HDOP up from driver
    uint32_t hdop_100 = p.readu32(); // HDOP * 100
@@ -262,11 +262,42 @@ handler(gps_h) {
    gps.position_covariance[8] = (2*hdop)*(2*hdop); // FIXME
    if( hdop_100 == 0 ) {
       gps.position_covariance_type =
-         sensor_msgs::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
+         dagny_driver::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
    } else {
       gps.position_covariance_type =
-         sensor_msgs::NavSatFix::COVARIANCE_TYPE_APPROXIMATED;
+         dagny_driver::NavSatFix::COVARIANCE_TYPE_APPROXIMATED;
    }
+
+   // pass speed and course
+   uint32_t speed_knots_100 = p.readu32(); // speed in hundreths of a knot
+   uint32_t course_100 = p.readu32(); // course in hundredths of a degree
+
+   // convert course to radians
+   // TODO: is this NED or ENU?
+   double course = (course_100 / 100.0) * M_PI / 180.0;
+   // convert knots to m/s
+   double speed = (speed_knots_100 / 100.0) * 0.514444;
+
+   gps.speed = speed;
+   double speed_cov = 1.0; // speed within 1m/s
+   gps.speed_var = speed_cov * speed_cov;
+
+   // research suggests that course is more accurate above speeds somewhere
+   // between 0.5kpmh and 1.5kmph ( 0.14m/s to 0.4m/s )
+   gps.course = course;
+   // TODO: these are just estimates. tune appropriately
+   const double course_cov_moving = M_PI/4.0;
+   const double course_cov_stationary = M_PI*4;
+   const double moving_slow = 0.1;
+   const double moving_fast = 0.5;
+   // scaling factor on speed covariance
+   double alpha = (speed - moving_slow) / (moving_fast - moving_slow);
+   if(alpha < 0.0) alpha = 0.0;
+   if(alpha > 1.0) alpha = 1.0;
+
+   double course_cov = (1-alpha)*course_cov_stationary +
+                           alpha*course_cov_moving;
+   gps.course_var = course_cov * course_cov;
 
    // publish
    gps_pub.publish(gps);
@@ -699,7 +730,7 @@ int main(int argc, char ** argv) {
 
    odo_pub = n.advertise<nav_msgs::Odometry>("odom", 10);
    sonar_pub = n.advertise<sensor_msgs::Range>("sonar", 10);
-   gps_pub = n.advertise<sensor_msgs::NavSatFix>("gps", 10);
+   gps_pub = n.advertise<dagny_driver::NavSatFix>("gps", 10);
    heading_pub = n.advertise<std_msgs::Float32>("heading", 10);
    bump_pub = n.advertise<std_msgs::Bool>("bump", 10);
    encoder_pub = n.advertise<dagny_driver::Encoder>("encoder", 10);

@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   diagnostic_msgs
   message_generation)
 
-add_message_files(FILES Encoder.msg Goal.msg Battery.msg)
+add_message_files(FILES Encoder.msg Goal.msg Battery.msg NavSatFix.msg)
 
 generate_messages(DEPENDENCIES std_msgs sensor_msgs)
 
