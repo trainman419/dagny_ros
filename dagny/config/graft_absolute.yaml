@@ -1,7 +1,7 @@
 planar_output: False # Output only x, y, and rotation about z
 
 parent_frame_id: utm_local # TF frame id, override output_frame if set
-child_frame_id: odom_combined #TF frame id
+child_frame_id: base_link #TF frame id
 
 freq: 10.0 # In Hz, param name ported from robot_pose_ekf
 update_rate: 10.0 # Overides 'freq' if set, in Hz
@@ -79,7 +79,7 @@ topics: {
     type: sensor_msgs/Imu,
     absolute_orientation: False,
     use_velocities: True,
-    use_accelerations: False,
+    use_accelerations: True,
     timeout: 2.0,
     # override covariances
     override_linear_acceleration_covariance: [ 0.14,  0.012,  -0.057,
@@ -103,13 +103,25 @@ topics: {
   },
 
   # alternate absolute position input
-  compass: {
-    topic: /compass_imu,
-    type: sensor_msgs/Imu,
-    absolute_orientation: True,
-    delta_orientation: False,
-    use_velocities: False,
-    use_accelerations: False,
-    timeout: 1.0
-  },
+  #compass: {
+  #  topic: /compass_imu,
+  #  type: sensor_msgs/Imu,
+  #  absolute_orientation: True,
+  #  delta_orientation: False,
+  #  use_velocities: False,
+  #  use_accelerations: False,
+  #  timeout: 1.0,
+  #  # set all of the covariances reasonably high so that we don't trust the
+  #  # zero accel and gyro data too much, and so that we use the compass,
+  #  # but only sparsely unless we're moving
+  #  override_linear_acceleration_covariance: [ 10000.0, 0.0, 0.0,
+  #                                             0.0, 10000.0, 0.0,
+  #                                             0.0, 0.0, 10000.0],
+  #  override_angular_velocity_covariance: [ 10000.0, 0.0, 0.0,
+  #                                          0.0, 10000.0, 0.0,
+  #                                          0.0, 0.0, 10000.0],
+  #  override_orientation_covariance: [ 1000.0, 0.0, 0.0,
+  #                                     0.0, 1000.0, 0.0,
+  #                                     0.0, 0.0, 1000.0 ],
+  #},
 }
