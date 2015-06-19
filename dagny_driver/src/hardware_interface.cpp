@@ -286,18 +286,18 @@ handler(gps_h) {
    // between 0.5kpmh and 1.5kmph ( 0.14m/s to 0.4m/s )
    gps.course = course;
    // TODO: these are just estimates. tune appropriately
-   const double course_cov_moving = M_PI/4.0;
-   const double course_cov_stationary = M_PI*4;
-   const double moving_slow = 0.1;
-   const double moving_fast = 0.5;
+   const double course_std_moving = 10.0 * M_PI / 180.0; // 10 degress
+   const double course_std_stationary = M_PI*4;
+   const double moving_slow = 0.2;
+   const double moving_fast = 0.8;
    // scaling factor on speed covariance
    double alpha = (speed - moving_slow) / (moving_fast - moving_slow);
    if(alpha < 0.0) alpha = 0.0;
    if(alpha > 1.0) alpha = 1.0;
 
-   double course_cov = (1-alpha)*course_cov_stationary +
-                           alpha*course_cov_moving;
-   gps.course_var = course_cov * course_cov;
+   double course_std = (1-alpha)*course_std_stationary +
+                           alpha*course_std_moving;
+   gps.course_var = course_std * course_std;
 
    // publish
    gps_pub.publish(gps);
