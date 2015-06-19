@@ -273,7 +273,7 @@ handler(gps_h) {
    uint32_t course_100 = p.readu32(); // course in hundredths of a degree
 
    // convert course to radians
-   // TODO: is this NED or ENU?
+   // course is NED (north: 0deg, East: 90deg)
    double course = (course_100 / 100.0) * M_PI / 180.0;
    // convert knots to m/s
    double speed = (speed_knots_100 / 100.0) * 0.514444;

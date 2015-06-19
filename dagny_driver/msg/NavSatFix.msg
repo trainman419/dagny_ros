@@ -50,7 +50,8 @@ float64 speed
 # Variance in speed from GPS
 float64 speed_var
 
-# Course
+# Course in radians NED, since NED is the format most commonly used by GPS
+# 0: North; PI/2: East
 float64 course
 # Variance in course. Probably depends on the specific GPS unit and
 # the speed
